@@ -1,0 +1,131 @@
+basePath: /
+definitions:
+  dto.CreateNotificationResponse:
+    properties:
+      notification_id:
+        type: integer
+    type: object
+  dto.GetNotificationResponse:
+    properties:
+      notification_status:
+        $ref: '#/definitions/models.Status'
+    type: object
+  models.Status:
+    enum:
+    - scheduled
+    - sent
+    - cancelled
+    - failed
+    type: string
+    x-enum-varnames:
+    - StatusScheduled
+    - StatusSent
+    - StatusCancelled
+    - StatusFailed
+host: localhost:8081
+info:
+  contact: {}
+  description: API for Delayed Notifier
+  termsOfService: http://swagger.io/terms/
+  title: Delayed Notifier
+  version: "1.0"
+paths:
+  /notify:
+    post:
+      consumes:
+      - application/json
+      description: create notification with provided params
+      parameters:
+      - description: notification ID
+        in: query
+        name: notification_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CreateNotificationResponse'
+        "400":
+          description: impossible to create notification
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: failed to create notification
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: create notification
+      tags:
+      - notify
+  /notify/{notification_id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete notification by notification_id
+      parameters:
+      - description: notification ID
+        in: query
+        name: notification_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: delete notification successful
+          schema:
+            type: string
+        "400":
+          description: invalid notification_id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: failed to delete notification
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: delete notification
+      tags:
+      - notify
+    get:
+      consumes:
+      - application/json
+      description: get notification status by notification_id
+      parameters:
+      - description: notification ID
+        in: query
+        name: notification_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetNotificationResponse'
+        "400":
+          description: invalid notification_id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: failed to get notification status
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: get notification status
+      tags:
+      - notify
+swagger: "2.0"

@@ -1,0 +1,86 @@
+app:
+  name: "Delayed Notifier"
+  version: "1.0.0"
+
+server:
+  host: "0.0.0.0"
+  port: 8081
+  shutdown_timeout: 10s
+
+postgres: 
+  host: "postgres"
+  port: 5432
+  username: "postgres"
+  password: "16012006"
+  db: "notificationsDB"
+  max_open_conns: 0
+  max_idle_conns: 2
+  conn_max_lifetime: 0s  
+
+logger:
+  level: "info"
+
+web:
+  path: "./web"
+
+redis:
+  host: "redis"
+  port: 6379
+  password: ""
+  database: 0
+  ttl: 1h
+
+rabbitmq:
+  conn:
+    url: "amqp://guest:guest@rabbitmq:5672"
+    retries: 5 # retry для connection
+    pause: 3s
+  exchange:
+    name: "notifications"
+    type: "direct"
+    durable: true # сохр при перезапуске
+    auto_delete: false
+    internal: false
+    no_wait: false
+  retry_exchange:
+    name: "retry_notifications"
+    type: "direct"
+    durable: true # сохр при перезапуске
+    auto_delete: false
+    internal: false
+    no_wait: false
+  queue_email:
+    name: "email"
+    routing_key: "send_email"
+  queue_tg:
+    name: "tg"
+    routing_key: "send_tg"
+  retry_queue_email:
+    name: "retry_email"
+    routing_key: "retry_send_email"
+  retry_queue_tg:
+    name: "retry_tg"
+    routing_key: "retry_send_tg"
+  attempts: 5
+  delay: 10s
+  backoff: 2
+
+email:
+  host: "smtp.gmail.com"          
+  port: 587                         
+  username: "testwbnotifier@gmail.com"  
+  password: "rt5-fEi-8qe-tTP"          
+  from: "Notifier <testwbnotifier@example.com>"  
+
+
+telegram:
+  bot_token: "8085413863:AAG2V6khQ1YsQDowiqTCulsc-a4dZtWCXGs"  # в реальной системе так не храним, сейчас для удобства тестирования
+  timeout: 60                    # Таймаут запросов к Telegram API
+  debug: false                  
+
+  
+
+
+
+
+ 

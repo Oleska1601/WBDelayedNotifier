@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - rabbitmq-logs:/var/log/rabbitmq
+    restart: always
+    networks:
+      - notifier_network
+
+  postgres:
+    container_name: postgres
+    image: postgres
+    volumes:
+      - pg-data:/var/lib/postgresql/data # создание хранилища (без него все данные исчезнут после перезапуска контейнера)
+    ports:
+      - "5432:5432"
+    networks:
+      - notifier_network
+  
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data  
+    networks:
+      - notifier_network
+
+  notifier:
+    container_name: notifier
+    image: notifier
+    build: 
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - rabbitmq  
+      - redis     
+    networks:
+      - notifier_network
+    restart: unless-stopped
+
+volumes:
+  pg-data:
+  redis-data:
+  rabbitmq-data:
+  rabbitmq-logs:
+
+networks:
+  notifier_network:
+    driver: bridge 

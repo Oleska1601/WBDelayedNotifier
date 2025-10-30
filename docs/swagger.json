@@ -1,0 +1,195 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API for Delayed Notifier",
+        "title": "Delayed Notifier",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8081",
+    "basePath": "/",
+    "paths": {
+        "/notify": {
+            "post": {
+                "description": "create notification with provided params",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notify"
+                ],
+                "summary": "create notification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "notification ID",
+                        "name": "notification_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateNotificationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "impossible to create notification",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "failed to create notification",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/notify/{notification_id}": {
+            "get": {
+                "description": "get notification status by notification_id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notify"
+                ],
+                "summary": "get notification status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "notification ID",
+                        "name": "notification_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetNotificationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid notification_id",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "failed to get notification status",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete notification by notification_id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notify"
+                ],
+                "summary": "delete notification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "notification ID",
+                        "name": "notification_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "delete notification successful",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid notification_id",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "failed to delete notification",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.CreateNotificationResponse": {
+            "type": "object",
+            "properties": {
+                "notification_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.GetNotificationResponse": {
+            "type": "object",
+            "properties": {
+                "notification_status": {
+                    "$ref": "#/definitions/models.Status"
+                }
+            }
+        },
+        "models.Status": {
+            "type": "string",
+            "enum": [
+                "scheduled",
+                "sent",
+                "cancelled",
+                "failed"
+            ],
+            "x-enum-varnames": [
+                "StatusScheduled",
+                "StatusSent",
+                "StatusCancelled",
+                "StatusFailed"
+            ]
+        }
+    }
+}
