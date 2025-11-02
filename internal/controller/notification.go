@@ -17,20 +17,20 @@ import (
 // @Tags         notify
 // @Accept       json
 // @Produce      json
-// @Param        notification_id   query      string  true  "notification ID"
+// @Param        notification_id   path      integer  true  "notification ID"
 // @Success		200					{object}	dto.GetNotificationResponse
 // @Failure		400					{object}	map[string]string	"invalid notification_id"
 // @Failure		500					{object}	map[string]string	"failed to get notification status"
 // @Router 		/notify/{notification_id} [get]
 func (s *Server) GetNotificationStatusHandler(c *gin.Context) {
 	ctx := c.Request.Context()
-	notificationIDStr := strings.TrimSpace(c.Query("notification_id"))
+	notificationIDStr := strings.TrimSpace(c.Param("notification_id"))
 	notificationID, err := strconv.ParseInt(notificationIDStr, 10, 64)
 	if err != nil || notificationID <= 0 {
 		zlog.Logger.Error().
 			Err(err).
 			Int("status", http.StatusBadRequest).
-			Str("path", "GetNotificationStatusHandler strconv.ParseInt").
+			Str("path", "GetNotificationStatusHandler").
 			Msg("invalid notification_id")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid notification_id"})
 		return
@@ -51,7 +51,6 @@ func (s *Server) GetNotificationStatusHandler(c *gin.Context) {
 		Int("status", http.StatusOK).
 		Str("path", "GetNotificationStatusHandler").
 		Int64("notification_id", notificationID).
-		Type("notification_status", notificationStatus).
 		Msg("get notification status successful")
 
 	c.JSON(http.StatusOK, dto.GetNotificationResponse{
@@ -65,7 +64,7 @@ func (s *Server) GetNotificationStatusHandler(c *gin.Context) {
 // @Tags notify
 // @Accept json
 // @Produce json
-// @Param        notification_id   query      string  true  "notification ID"
+// @Param notification body dto.CreateNotificationRequest true "notification request"
 // @Success		200					{object}	dto.CreateNotificationResponse
 // @Failure		400					{object}	map[string]string	"impossible to create notification"
 // @Failure		500					{object}	map[string]string	"failed to create notification"
@@ -82,6 +81,7 @@ func (s *Server) CreateNotificationHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "impossible to create notification"})
 		return
 	}
+
 	notification, err := notificationRequest.ToModel()
 	if err != nil {
 		zlog.Logger.Error().
@@ -92,6 +92,7 @@ func (s *Server) CreateNotificationHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "impossible to create notification"})
 		return
 	}
+
 	notificationID, err := s.usecase.CreateNotification(ctx, notification)
 	if err != nil {
 		zlog.Logger.Error().
@@ -99,6 +100,7 @@ func (s *Server) CreateNotificationHandler(c *gin.Context) {
 			Int("status", http.StatusInternalServerError).
 			Str("path", "CreateNotificationHandler s.usecase.CreateNotification").
 			Msg("failed to create notification")
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create notification"})
 		return
 	}
@@ -120,14 +122,14 @@ func (s *Server) CreateNotificationHandler(c *gin.Context) {
 // @Tags notify
 // @Accept json
 // @Produce json
-// @Param        notification_id   query      string  true  "notification ID"
+// @Param        notification_id   path      integer  true  "notification ID"
 // @Success		200					{string}	string "delete notification successful"
 // @Failure		400					{object}	map[string]string	"invalid notification_id"
 // @Failure		500					{object}	map[string]string	"failed to delete notification"
 // @Router /notify/{notification_id} [delete]
 func (s *Server) DeleteNotificationHandler(c *gin.Context) {
 	ctx := c.Request.Context()
-	notificationIDStr := strings.TrimSpace(c.Query("notification_id"))
+	notificationIDStr := strings.TrimSpace(c.Param("notification_id"))
 	notificationID, err := strconv.ParseInt(notificationIDStr, 10, 64)
 	if err != nil || notificationID <= 0 {
 		zlog.Logger.Error().
@@ -139,16 +141,21 @@ func (s *Server) DeleteNotificationHandler(c *gin.Context) {
 		return
 	}
 
-	err = s.usecase.UpdateNotificationStatus(ctx, notificationID, models.StatusCancelled)
+	updateNotification := models.UpdateNotification{
+		ID:     notificationID,
+		Status: models.StatusCancelled,
+	}
+	err = s.usecase.UpdateNotification(ctx, updateNotification)
 	if err != nil {
 		zlog.Logger.Error().
 			Err(err).
 			Int("status", http.StatusInternalServerError).
-			Str("path", "DeleteNotificationHandler s.usecase.UpdateNotificationStatus").
+			Str("path", "DeleteNotificationHandler s.usecase.UpdateNotification").
 			Msg("failed to delete notification")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete notification"})
 		return
 	}
+
 	zlog.Logger.Info().
 		Int("status", http.StatusOK).
 		Str("path", "DeleteNotificationHandler").

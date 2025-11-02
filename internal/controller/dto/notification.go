@@ -15,10 +15,10 @@ type GetNotificationResponse struct {
 }
 
 type CreateNotificationRequest struct {
-	Channel     models.Channel `json:"channel" binding:"required,oneof=email telegram" example:"email"`
-	Recipient   string         `json:"recipient" binding:"required" example:"email@gmail.com"` // адрес тг или email
+	Channel     models.Channel `json:"channel" binding:"required,oneof=email telegram" example:"telegram"`
+	Recipient   string         `json:"recipient" binding:"required" example:"796744183"` // адрес тг или email
 	Message     string         `json:"message" validate:"required" example:"test_message"`
-	ScheduledAt time.Time      `json:"scheduled_at" validate:"required" example:"2024-01-15T14:00:00Z"`
+	ScheduledAt time.Time      `json:"scheduled_at" validate:"required" example:"2025-11-01T10:40:00Z"`
 }
 
 type CreateNotificationResponse struct {
@@ -58,13 +58,13 @@ func isValidEmail(email string) bool {
 }
 
 func isValidTelegram(tg string) bool {
-	// Проверяем либо @username, либо числовой ID
-	if strings.HasPrefix(tg, "@") {
-		return len(tg) >= 5 && len(tg) <= 32 // @username от 5 до 32 символов
+	// проверяем числовой chat_id
+	chatID, err := strconv.ParseInt(tg, 10, 64)
+	if err != nil {
+		return false
 	}
-	// Или числовой ID
-	_, err := strconv.ParseInt(tg, 10, 64)
-	return err == nil
+
+	return chatID > 0
 }
 
 func (r *CreateNotificationRequest) ToModel() (models.Notification, error) {

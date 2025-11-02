@@ -1,5 +1,30 @@
 basePath: /
 definitions:
+  dto.CreateNotificationRequest:
+    properties:
+      channel:
+        allOf:
+        - $ref: '#/definitions/models.Channel'
+        enum:
+        - email
+        - telegram
+        example: telegram
+      message:
+        example: test_message
+        type: string
+      recipient:
+        description: адрес тг или email
+        example: "796744183"
+        type: string
+      scheduled_at:
+        example: "2025-11-01T10:40:00Z"
+        type: string
+    required:
+    - channel
+    - message
+    - recipient
+    - scheduled_at
+    type: object
   dto.CreateNotificationResponse:
     properties:
       notification_id:
@@ -10,6 +35,14 @@ definitions:
       notification_status:
         $ref: '#/definitions/models.Status'
     type: object
+  models.Channel:
+    enum:
+    - telegram
+    - email
+    type: string
+    x-enum-varnames:
+    - ChannelTelegram
+    - ChannelEmail
   models.Status:
     enum:
     - scheduled
@@ -36,11 +69,12 @@ paths:
       - application/json
       description: create notification with provided params
       parameters:
-      - description: notification ID
-        in: query
-        name: notification_id
+      - description: notification request
+        in: body
+        name: notification
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/dto.CreateNotificationRequest'
       produces:
       - application/json
       responses:
@@ -70,7 +104,7 @@ paths:
       description: delete notification by notification_id
       parameters:
       - description: notification ID
-        in: query
+        in: path
         name: notification_id
         required: true
         type: string
@@ -102,7 +136,7 @@ paths:
       description: get notification status by notification_id
       parameters:
       - description: notification ID
-        in: query
+        in: path
         name: notification_id
         required: true
         type: string

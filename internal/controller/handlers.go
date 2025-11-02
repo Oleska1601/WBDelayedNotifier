@@ -13,6 +13,8 @@ func (s *Server) setupRouter() {
 	ginMode := ""
 	engine := ginext.New(ginMode)
 
+	engine.Static("/", "./web")
+
 	notifyGroup := engine.Group("/notify")
 	{
 		notifyGroup.GET("/:notification_id", s.GetNotificationStatusHandler)

@@ -7,13 +7,6 @@ import (
 	"github.com/Oleska1601/WBDelayedNotifier/internal/app"
 )
 
-// @title Delayed Notifier
-// @version 1.0
-// @description API for Order Service
-// @termsOfService http://swagger.io/terms/
-
-// @host :8081
-// @BasePath /
 func main() {
 	cfg, err := config.New()
 	if err != nil {

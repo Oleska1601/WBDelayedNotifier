@@ -3,10 +3,16 @@ version: "3.9"
 services:
 
   rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq
     container_name: rabbitmq
+    env_file:
+      .env
+    build: 
+      context: .
+      dockerfile: dockerfile.rabbitmq
     ports:
       - "5672:5672"   
+      - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
       - rabbitmq-logs:/var/log/rabbitmq
@@ -17,8 +23,10 @@ services:
   postgres:
     container_name: postgres
     image: postgres
+    env_file:
+      .env
     volumes:
-      - pg-data:/var/lib/postgresql/data # создание хранилища (без него все данные исчезнут после перезапуска контейнера)
+      - postgres-data:/var/lib/postgresql # создание хранилища (без него все данные исчезнут после перезапуска контейнера)
     ports:
       - "5432:5432"
     networks:
@@ -28,6 +36,8 @@ services:
     image: "redis:latest"
     ports:
       - "6379:6379"
+    env_file:
+      .env
     restart: unless-stopped
     volumes:
       - redis-data:/data  
@@ -37,6 +47,8 @@ services:
   notifier:
     container_name: notifier
     image: notifier
+    env_file:
+      .env
     build: 
       context: .
       dockerfile: dockerfile
@@ -51,7 +63,7 @@ services:
     restart: unless-stopped
 
 volumes:
-  pg-data:
+  postgres-data:
   redis-data:
   rabbitmq-data:
   rabbitmq-logs:

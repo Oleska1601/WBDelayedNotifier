@@ -15,7 +15,7 @@ const (
 			$1, $2, $3, $4, $5, $6
 		) RETURNING id
 	`
-	updateNotificationStatus = `UPDATE notifications SET status = $1 WHERE id = $2`
+	updateNotification = `UPDATE notifications SET status = $1, sent_at = $2 WHERE id = $3`
 )
 
 func (r *PgRepo) GetNotificationStatus(ctx context.Context, notificationID int64) (models.Status, error) {
@@ -27,23 +27,6 @@ func (r *PgRepo) GetNotificationStatus(ctx context.Context, notificationID int64
 	return status, nil
 }
 
-func (r *PgRepo) UpdateReadyNotifications(ctx context.Context) ([]models.Notification, error) {
-	res, err := r.db.Master.QueryContext(ctx, getNotificationStatus)
-	if err != nil {
-		return nil, fmt.Errorf("r.db.Master.QueryContext: %w", err)
-	}
-	notifications := []models.Notification{}
-	var notification models.Notification
-	for res.Next() {
-		if err := res.Scan(&notification); err != nil {
-			return nil, fmt.Errorf("fmt.Scan: %w", err)
-		}
-		notifications = append(notifications, notification)
-	}
-
-	return notifications, nil
-}
-
 func (r *PgRepo) CreateNotification(ctx context.Context, notification models.Notification) (int64, error) {
 	tx, err := r.db.Master.BeginTx(ctx, nil)
 	if err != nil {
@@ -51,20 +34,19 @@ func (r *PgRepo) CreateNotification(ctx context.Context, notification models.Not
 	}
 	defer r.rollbackTransaction(tx)
 
-	res, err := tx.ExecContext(ctx, insertNotification,
+	var notificationID int64
+
+	err = tx.QueryRowContext(ctx, insertNotification,
 		notification.Channel,
 		notification.Recipient,
 		notification.Message,
 		notification.CreatedAt,
 		notification.ScheduledAt,
 		notification.Status,
-	)
+	).Scan(&notificationID)
+
 	if err != nil {
-		return 0, fmt.Errorf("tx.ExecContext: %w", err)
-	}
-	notificationID, err := res.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("res.LastInsertId: %w", err)
+		return 0, fmt.Errorf("tx.QueryRowContext: %w", err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -74,14 +56,14 @@ func (r *PgRepo) CreateNotification(ctx context.Context, notification models.Not
 	return notificationID, nil
 }
 
-func (r *PgRepo) UpdateNotificationStatus(ctx context.Context, notificationID int64, status models.Status) error {
+func (r *PgRepo) UpdateNotification(ctx context.Context, notification models.UpdateNotification) error {
 	tx, err := r.db.Master.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("r.db.Master.BeginTx: %w", err)
 	}
 	defer r.rollbackTransaction(tx)
 
-	_, err = tx.ExecContext(ctx, updateNotificationStatus, notificationID, status)
+	_, err = tx.ExecContext(ctx, updateNotification, notification.Status, notification.SentAt, notification.ID)
 	if err != nil {
 		return fmt.Errorf("tx.ExecContext: %w", err)
 	}

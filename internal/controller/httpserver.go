@@ -12,7 +12,7 @@ type Server struct {
 	usecase UsecaseInterface
 }
 
-func New(cfg config.ServerConfig, usecase UsecaseInterface) *Server {
+func New(cfg *config.ServerConfig, usecase UsecaseInterface) *Server {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	server := &Server{
 		Srv: &http.Server{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/Oleska1601/WBDelayedNotifier/internal/models"
@@ -14,52 +15,62 @@ import (
 
 const (
 	maxRetries = 5
-	baseDelay  = 30 * time.Second
+	baseDelay  = 1 * time.Second
 )
 
 func getRetryCount(headers amqp091.Table) int {
-	raw := headers["x-retry-count"]
-	val, ok := raw.(int)
-	// p.s. в случае если появится несколько сервисов,
-	// реализовать type-switch и учитывать также например string (для большей безопасности, что мы точно не потеряем этот x-retry-count и не пойдем retry-ить с начала с 0)
-	if !ok {
+	raw, exists := headers["x-retry-count"]
+	if !exists {
 		return 0
 	}
-	return val
+
+	str := fmt.Sprintf("%v", raw)
+	count, err := strconv.Atoi(str)
+	if err != nil {
+		return 0
+	}
+
+	return count
 }
 
-func (n *Notifier) updateDB(ctx context.Context, notificationID int64, status models.Status) error {
+func (n *Notifier) updateDB(ctx context.Context, updateNotification models.UpdateNotification) error {
 	strategy := retry.Strategy{
 		Attempts: 3,
 		Delay:    time.Millisecond * 500,
 		Backoff:  2,
 	}
-	updateFn := func() error { return n.usecase.UpdateNotificationStatus(ctx, notificationID, status) }
+	// ф-ия с retry, поскольку необходимо обеспечить консистентность между статусом в БД и фактической отправкой:
+	// - после исчерпания лимита попыток обновляет статус на 'failed'
+	// - при успешной отправке обновляет статус на 'sent' и устанавливает время отправки
+	updateFn := func() error { return n.usecase.UpdateNotification(ctx, updateNotification) }
 	err := retry.Do(updateFn, strategy)
 	if err != nil {
-		return fmt.Errorf("update notification status: %w", err)
+		return fmt.Errorf("n.usecase.UpdateNotificationStatus: %w", err)
 	}
 	return nil
 }
 
 func (n *Notifier) calculateExponentialDelay(retryCount int) time.Duration {
-	// 30s → 60s → 120s → 240s → 480s
 	return time.Duration(math.Pow(2, float64(retryCount))) * baseDelay
 }
 
 func (n *Notifier) processRetry(ctx context.Context, delivery amqp091.Delivery, notificationID int64, channelType models.Channel) {
 	retryCount := getRetryCount(delivery.Headers)
 	if retryCount == maxRetries {
-		err := n.updateDB(ctx, notificationID, models.StatusFailed)
+		updateNotification := models.UpdateNotification{
+			ID:     notificationID,
+			Status: models.StatusFailed,
+		}
+		err := n.updateDB(ctx, updateNotification)
 		if err != nil {
 			zlog.Logger.Error().
 				Err(err).
 				Str("path", "processConsume n.updateDB").
 				Int64("notification_id", notificationID)
-			// мб кинуть алерт, тк состояние бд неконсистентно
 		}
-		zlog.Logger.Warn().Msgf("notification %d failed after %d retries", notificationID, retryCount)
-		delivery.Ack(false)
+
+		zlog.Logger.Error().Msgf("notification %d failed after %d retries", notificationID, retryCount)
+		n.safeAck(false, delivery)
 		return
 	}
 
@@ -88,10 +99,10 @@ func (n *Notifier) processRetry(ctx context.Context, delivery amqp091.Delivery, 
 			Err(err).
 			Str("path", "processRetry n.channel.Publish").
 			Int64("notification_id", notificationID)
-		delivery.Nack(false, true) // пробуем еще раз
+		n.safeNack(false, true, delivery) // пробуем еще раз
 		return
 	}
 
-	delivery.Ack(false)
+	n.safeAck(false, delivery)
 
 }

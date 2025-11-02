@@ -12,5 +12,5 @@ type SenderInterface interface {
 
 type NotifyUsecaseInterface interface {
 	GetNotificationStatus(context.Context, int64) (models.Status, error)
-	UpdateNotificationStatus(context.Context, int64, models.Status) error
+	UpdateNotification(context.Context, models.UpdateNotification) error
 }

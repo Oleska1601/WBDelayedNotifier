@@ -23,6 +23,7 @@ type PostgresConfig struct {
 	Username        string        `mapstructure:"username"`
 	Password        string        `mapstructure:"password"`
 	Database        string        `mapstructure:"database"`
+	SSLMode         string        `mapstructure:"ssl_mode"`
 	MaxOpenConns    int           `mapstructure:"max_open_conns"`
 	MaxIdleConns    int           `mapstructure:"max_idle_conns"`
 	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"`
@@ -30,10 +31,6 @@ type PostgresConfig struct {
 
 type LoggerConfig struct {
 	Level string `mapstructure:"level"`
-}
-
-type WebConfig struct {
-	Path string `mapstructure:"path"`
 }
 
 type RedisConfig struct {
@@ -91,9 +88,8 @@ type EmailConfig struct {
 }
 
 type TelegramConfig struct {
-	BotToken string        `mapstructure:"bot_token"`
-	Timeout  time.Duration `mapstructure:"timeout"`
-	Debug    bool          `mapstructure:"debug"`
+	BotToken string `mapstructure:"bot_token"`
+	Timeout  int    `mapstructure:"timeout"`
 }
 
 type Config struct {
@@ -101,7 +97,6 @@ type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	DB       PostgresConfig `mapstructure:"postgres"`
 	Logger   LoggerConfig   `mapstructure:"logger"`
-	Web      WebConfig      `mapstructure:"web"`
 	Redis    RedisConfig    `mapstructure:"redis"`
 	RabbitMQ RabbitMQConfig `mapstructure:"rabbitmq"`
 	Email    EmailConfig    `mapstructure:"email"`

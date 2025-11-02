@@ -12,10 +12,10 @@ import (
 type Publisher struct {
 	publisher *rabbitmq.Publisher
 	//channel   *ampq091.Channel
-	cfg config.RabbitMQConfig
+	cfg *config.RabbitMQConfig
 }
 
-func New(cfg config.RabbitMQConfig) (*Publisher, error) {
+func New(cfg *config.RabbitMQConfig) (*Publisher, error) {
 	conn, err := rabbitmq.Connect(cfg.Conn.URL, cfg.Conn.Retries, cfg.Conn.Pause)
 	if err != nil {
 		return nil, fmt.Errorf("establish a connection to RabbitMQ: %w", err)
@@ -128,7 +128,7 @@ func (p *Publisher) PublishNotification(notification models.Notification) error 
 	}
 
 	msgHeaders := make(map[string]interface{})
-	msgHeaders["x-delay"] = delay
+	msgHeaders["x-delay"] = delay.Milliseconds()
 	options := rabbitmq.PublishingOptions{
 		Headers: msgHeaders,
 	}

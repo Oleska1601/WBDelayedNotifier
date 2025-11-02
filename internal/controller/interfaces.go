@@ -9,5 +9,5 @@ import (
 type UsecaseInterface interface {
 	GetNotificationStatus(context.Context, int64) (models.Status, error)
 	CreateNotification(context.Context, models.Notification) (int64, error)
-	UpdateNotificationStatus(context.Context, int64, models.Status) error
+	UpdateNotification(context.Context, models.UpdateNotification) error
 }

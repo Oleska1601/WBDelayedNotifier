@@ -30,13 +30,9 @@ class App {
             const formData = {
                 message: document.getElementById('message').value,
                 scheduled_at: document.getElementById('scheduled-time').value,
-                channel: document.getElementById('channel').value
+                channel: document.getElementById('channel').value,
+                recipient: document.getElementById('recipient').value
             };
-
-            // Валидация
-            if (!this.validateForm(formData)) {
-                return;
-            }
 
             // Создание уведомления
             await NotificationManager.createNotification(formData);
@@ -44,29 +40,11 @@ class App {
             // Очистка формы
             form.reset();
         });
-    }
 
-    // Валидация формы
-    validateForm(formData) {
-        if (!formData.message.trim()) {
-            UI.showError('Введите текст сообщения');
-            return false;
-        }
-
-        if (!formData.scheduled_at) {
-            UI.showError('Выберите время отправки');
-            return false;
-        }
-
-        const scheduledTime = new Date(formData.scheduled_at);
-        const now = new Date();
-
-        if (scheduledTime <= now) {
-            UI.showError('Время отправки должно быть в будущем');
-            return false;
-        }
-
-        return true;
+        // Обработчик смены канала
+        document.getElementById('channel').addEventListener('change', (e) => {
+            UI.updateRecipientFields(e.target.value);
+        });
     }
 
     // Автообновление списка каждые 30 секунд

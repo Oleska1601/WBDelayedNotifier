@@ -14,7 +14,7 @@ type Redis struct {
 	ttl    time.Duration
 }
 
-func New(cfg config.RedisConfig) (*Redis, error) {
+func New(cfg *config.RedisConfig) (*Redis, error) {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	client := redis.New(addr, cfg.Password, cfg.Database)
 	rc := &Redis{

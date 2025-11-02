@@ -7,21 +7,32 @@ server:
   port: 8081
   shutdown_timeout: 10s
 
+POSTGRES_HOST=postgres
+POSTGRES_PORT = 5432
+POSTGRES_USERNAME=postgres
+POSTGRES_PASSWORD=16012006
+POSTGRES_DB=notificationsDB
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+RABBITMQ_CONN_URL=amqp://guest:guest@rabbitmq:5672/
+
+TELEGRAM_BOT_TOKEN=8085413863:AAG2V6khQ1YsQDowiqTCulsc-a4dZtWCXGs
+
 postgres: 
-  host: "postgres"
-  port: 5432
-  username: "postgres"
-  password: "16012006"
-  db: "notificationsDB"
+  host: "postgres" 
+  port: 5342
+  username: "${POSTGRES_USERNAME}"
+  password: "${POSTGRES_PASSWORD}"
+  db: "${POSTGRES_DB}"
+  ssl_mode: "disable"
   max_open_conns: 0
   max_idle_conns: 2
   conn_max_lifetime: 0s  
 
 logger:
   level: "info"
-
-web:
-  path: "./web"
 
 redis:
   host: "redis"
@@ -32,7 +43,7 @@ redis:
 
 rabbitmq:
   conn:
-    url: "amqp://guest:guest@rabbitmq:5672"
+    url: "amqp://guest:guest@localhost:5672"
     retries: 5 # retry для connection
     pause: 3s
   exchange:
@@ -52,31 +63,45 @@ rabbitmq:
   queue_email:
     name: "email"
     routing_key: "send_email"
+    durable: true       
+    auto_delete: false   
+    exclusive: false     
+    no_wait: false  
   queue_tg:
     name: "tg"
     routing_key: "send_tg"
+    durable: true       
+    auto_delete: false   
+    exclusive: false     
+    no_wait: false  
   retry_queue_email:
     name: "retry_email"
     routing_key: "retry_send_email"
+    durable: true       
+    auto_delete: false   
+    exclusive: false     
+    no_wait: false  
   retry_queue_tg:
     name: "retry_tg"
     routing_key: "retry_send_tg"
+    durable: true       
+    auto_delete: false   
+    exclusive: false     
+    no_wait: false  
   attempts: 5
   delay: 10s
   backoff: 2
 
 email:
-  host: "smtp.gmail.com"          
-  port: 587                         
-  username: "testwbnotifier@gmail.com"  
-  password: "rt5-fEi-8qe-tTP"          
-  from: "Notifier <testwbnotifier@example.com>"  
-
+  host: "${EMAIL_HOST:smtp.gmail.com}"           
+  port: "${EMAIL_PORT:587}"
+  username: "${EMAIL_USERNAME}"                  
+  password: "${EMAIL_PASSWORD}"                  
+  from: "${EMAIL_FROM}"  
 
 telegram:
-  bot_token: "8085413863:AAG2V6khQ1YsQDowiqTCulsc-a4dZtWCXGs"  # в реальной системе так не храним, сейчас для удобства тестирования
-  timeout: 60                    # Таймаут запросов к Telegram API
-  debug: false                  
+  bot_token: "${TELEGRAM_BOT_TOKEN=8085413863:AAG2V6khQ1YsQDowiqTCulsc-a4dZtWCXGs}"
+  timeout: 60                           
 
   
 

@@ -10,7 +10,7 @@ class NotificationManager {
             this.renderList();
             UI.updateStats(this.notifications);
         } catch (error) {
-            UI.showError('Не удалось загрузить уведомления');
+            UI.showError(error.message || 'Не удалось загрузить уведомления');
         }
     }
 
@@ -23,7 +23,7 @@ class NotificationManager {
             UI.updateStats(this.notifications);
             UI.showSuccess('Уведомление успешно создано!');
         } catch (error) {
-            UI.showError('Ошибка при создании уведомления');
+            UI.showError(error.message || 'Ошибка при создании уведомления');
         }
     }
 
@@ -42,7 +42,7 @@ class NotificationManager {
             UI.updateStats(this.notifications);
             UI.showSuccess('Уведомление отменено');
         } catch (error) {
-            UI.showError('Ошибка при отмене уведомления');
+            UI.showError(error.message || 'Ошибка при отмене уведомления');
         }
     }
 

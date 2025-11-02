@@ -5,20 +5,18 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/Oleska1601/WBDelayedNotifier/config"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/wb-go/wbf/zlog"
 )
 
-const (
-	timeout = 60
-)
-
 type TGBotSender struct {
 	bot *tgbotapi.BotAPI
+	cfg *config.TelegramConfig
 }
 
-func New(token string) (*TGBotSender, error) {
-	bot, err := tgbotapi.NewBotAPI(token)
+func New(cfg *config.TelegramConfig) (*TGBotSender, error) {
+	bot, err := tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
 		return nil, fmt.Errorf("creates a new BotAPI instance: %w", err)
 	}
@@ -44,7 +42,7 @@ func (tg *TGBotSender) Send(chatIDStr, message string) error {
 
 func (ts *TGBotSender) HandleUpdates(ctx context.Context) {
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = timeout
+	u.Timeout = ts.cfg.Timeout
 
 	updates := ts.bot.GetUpdatesChan(u)
 

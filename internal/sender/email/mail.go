@@ -8,10 +8,10 @@ import (
 )
 
 type EmailSender struct {
-	cfg config.EmailConfig
+	cfg *config.EmailConfig
 }
 
-func New(cfg config.EmailConfig) *EmailSender {
+func New(cfg *config.EmailConfig) *EmailSender {
 	return &EmailSender{
 		cfg: cfg,
 	}

@@ -1,80 +1,60 @@
 // Базовый класс для работы с API
 class NotificationAPI {
-    static baseURL = '/api';
+    static baseURL = '';
 
     // Создание уведомления
-  
     static async createNotification(notificationData) {
-        try {
-            const response = await fetch(`${this.baseURL}/notify`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(notificationData)
-            });
+        const response = await fetch(`${this.baseURL}/notify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(notificationData)
+        });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Ошибка при создании уведомления:', error);
-            throw error;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
+
+        return await response.json();
     }
 
     // Получение уведомления по ID
     static async getNotification(id) {
-        try {
-            const response = await fetch(`${this.baseURL}/notify/${id}`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Ошибка при получении уведомления:', error);
-            throw error;
+        const response = await fetch(`${this.baseURL}/notify/${id}`);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
+
+        return await response.json();
     }
 
     // Отмена уведомления
     static async cancelNotification(id) {
-        try {
-            const response = await fetch(`${this.baseURL}/notify/${id}`, {
-                method: 'DELETE'
-            });
+        const response = await fetch(`${this.baseURL}/notify/${id}`, {
+            method: 'DELETE'
+        });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Ошибка при отмене уведомления:', error);
-            throw error;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
+
+        return await response.json();
     }
-/*
+
     // Получение всех уведомлений
     static async getAllNotifications() {
-        try {
-            // В реальном API может быть endpoint для получения списка
-            // Пока эмулируем получение через несколько запросов или бэкенд добавит /notifications
-            const response = await fetch(`${this.baseURL}/notifications`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Ошибка при получении списка уведомлений:', error);
-            throw error;
+        const response = await fetch(`${this.baseURL}/notifications`);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
+
+        return await response.json();
     }
-        */
 }

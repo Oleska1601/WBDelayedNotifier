@@ -8,16 +8,17 @@ import (
 	"github.com/Oleska1601/WBDelayedNotifier/internal/models"
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/wb-go/wbf/rabbitmq"
+	"github.com/wb-go/wbf/zlog"
 )
 
 type Notifier struct {
 	channel *amqp091.Channel
-	cfg     config.RabbitMQConfig
+	cfg     *config.RabbitMQConfig
 	usecase NotifyUsecaseInterface
 	senders map[models.Channel]SenderInterface
 }
 
-func New(cfg config.RabbitMQConfig, usecase NotifyUsecaseInterface) (*Notifier, error) {
+func New(cfg *config.RabbitMQConfig, usecase NotifyUsecaseInterface) (*Notifier, error) {
 	conn, err := rabbitmq.Connect(cfg.Conn.URL, cfg.Conn.Retries, cfg.Conn.Pause)
 	if err != nil {
 		return nil, fmt.Errorf("establish a connection to RabbitMQ: %w", err)
@@ -89,7 +90,7 @@ func New(cfg config.RabbitMQConfig, usecase NotifyUsecaseInterface) (*Notifier, 
 		return nil, fmt.Errorf("tg queue bind: %w", err)
 	}
 
-	// 3. Retry очереди (медленные)
+	// 3. Retry очереди
 	_, err = channel.QueueDeclare(
 		cfg.RetryQueueEmail.Name,
 		cfg.RetryQueueEmail.Durable,    // durable
@@ -157,4 +158,22 @@ func (n *Notifier) StartWorkers(ctx context.Context) {
 	// Воркеры для ретраев - низкий приоритет, можно меньше ресурсов
 	go n.consume(ctx, retryWorkers, n.cfg.RetryQueueEmail.Name, models.ChannelEmail)
 	go n.consume(ctx, retryWorkers, n.cfg.RetryQueueTg.Name, models.ChannelTelegram)
+}
+
+func (n *Notifier) safeAck(multiple bool, delivery amqp091.Delivery) {
+	if err := delivery.Ack(multiple); err != nil {
+		zlog.Logger.Error().
+			Err(err).
+			Str("message_id", delivery.MessageId).
+			Msg("failed to ack message")
+	}
+}
+
+func (n *Notifier) safeNack(multiple bool, requeue bool, delivery amqp091.Delivery) {
+	if err := delivery.Nack(multiple, requeue); err != nil {
+		zlog.Logger.Error().
+			Err(err).
+			Str("message_id", delivery.MessageId).
+			Msg("failed to nack message")
+	}
 }

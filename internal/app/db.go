@@ -7,14 +7,15 @@ import (
 	"github.com/wb-go/wbf/dbpg"
 )
 
-func initDB(cfg config.PostgresConfig) (*dbpg.DB, error) {
+func initDB(cfg *config.PostgresConfig) (*dbpg.DB, error) {
 	masterDSN := fmt.Sprintf(
-		"host=%s port=%d username=%s password=%s database=%s sslmode=disable",
-		cfg.Host,
-		cfg.Port,
+		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		cfg.Username,
 		cfg.Password,
+		cfg.Host,
+		cfg.Port,
 		cfg.Database,
+		cfg.SSLMode,
 	)
 	slaveDSNs := []string{}
 	options := &dbpg.Options{

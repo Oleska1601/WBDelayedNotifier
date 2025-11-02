@@ -1,4 +1,6 @@
 -- +goose Up
+BEGIN;
+
 CREATE TYPE status AS ENUM
 (
     'scheduled',    --создано, время еще не наступило
@@ -24,8 +26,13 @@ CREATE TABLE IF NOT EXISTS notifications (
     status status NOT NULL 
 );
 
+COMMIT;
 
 -- +goose Down
+BEGIN;
+
 DROP TABLE IF EXISTS notifications;
 DROP TYPE IF EXISTS channel;
 DROP TYPE IF EXISTS status;
+
+COMMIT;

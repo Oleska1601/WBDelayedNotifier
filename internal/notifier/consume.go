@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"sync"
+	"time"
 
 	"github.com/Oleska1601/WBDelayedNotifier/internal/models"
 	"github.com/rabbitmq/amqp091-go"
@@ -62,6 +63,8 @@ func (n *Notifier) processConsume(ctx context.Context, delivery amqp091.Delivery
 		zlog.Logger.Error().
 			Type("channel_type", channelType).
 			Msgf("channel type %s is not registered", channelType)
+
+		n.safeNack(false, false, delivery)
 		return
 	}
 
@@ -73,7 +76,7 @@ func (n *Notifier) processConsume(ctx context.Context, delivery amqp091.Delivery
 			Str("path", "process json.Unmarshal").
 			Msg("failed to unmarshal json")
 
-		delivery.Nack(false, false)
+		n.safeNack(false, false, delivery)
 		return
 	}
 
@@ -84,7 +87,8 @@ func (n *Notifier) processConsume(ctx context.Context, delivery amqp091.Delivery
 			Err(err).
 			Str("path", "processConsume n.usecase.GetNotificationStatus").
 			Msg("failed to get notification status")
-		delivery.Nack(false, false)
+
+		n.safeNack(false, false, delivery)
 		return
 	}
 
@@ -94,29 +98,32 @@ func (n *Notifier) processConsume(ctx context.Context, delivery amqp091.Delivery
 			Str("path", "processConsume").
 			Int64("notification_id", notification.ID).
 			Msg("send notification is cancelled")
-		delivery.Ack(false) // сообщение отменено - доставлять никуда не надо -> его обработка завершена
+		n.safeAck(false, delivery) // сообщение отменено - доставлять никуда не надо -> его обработка завершена
 		return
 	}
 
 	// 4
-	// пробуем отправить по указанному источнику (тг/почта)
-	// если не удалось - отправляем на обработку еще раз с заданной экспоненциальной задержкой
-	// такой цикл может макс повторятся 5 раз (см RabbitMQConfig)
 	if err := sender.Send(notification.Recipient, notification.Message); err != nil {
 		n.processRetry(ctx, delivery, notification.ID, channelType)
 		return
 	}
+	now := time.Now()
+	updateNotification := models.UpdateNotification{
+		ID:     notification.ID,
+		SentAt: &now,
+		Status: models.StatusSent,
+	}
 
-	err = n.updateDB(ctx, notification.ID, models.StatusSent)
+	err = n.updateDB(ctx, updateNotification)
+
 	if err != nil {
 		zlog.Logger.Error().
 			Err(err).
 			Str("path", "processConsume n.updateDB").
 			Int64("notification_id", notification.ID)
-		// мб кинуть алерт, тк состояние бд неконсистентно
-
 	}
+	zlog.Logger.Info().Msgf("notification %d is processed successful", notification.ID)
 	// подтверждаем отправку сообщения
-	delivery.Ack(false)
+	n.safeAck(false, delivery)
 
 }

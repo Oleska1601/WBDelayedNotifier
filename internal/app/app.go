@@ -37,7 +37,7 @@ func Run(cfg *config.Config) {
 	}
 
 	// postgres
-	db, err := initDB(cfg.DB)
+	db, err := initDB(&cfg.DB)
 	if err != nil {
 		zlog.Logger.Fatal().
 			Err(err).
@@ -50,10 +50,10 @@ func Run(cfg *config.Config) {
 	if err := pgRepo.ApplyMigrations(); err != nil {
 		zlog.Logger.Fatal().
 			Err(err).
-			Str("path", "pgRepo.ApplyMigrations").
+			Str("path", "Run pgRepo.ApplyMigrations").
 			Msg("apply migrations to database")
 	}
-	redis, err := redis.New(cfg.Redis)
+	redis, err := redis.New(&cfg.Redis)
 	if err != nil {
 		zlog.Logger.Fatal().
 			Err(err).
@@ -62,7 +62,7 @@ func Run(cfg *config.Config) {
 	}
 
 	// publisher
-	publisher, err := publisher.New(cfg.RabbitMQ)
+	publisher, err := publisher.New(&cfg.RabbitMQ)
 	if err != nil {
 		zlog.Logger.Fatal().
 			Err(err).
@@ -71,10 +71,10 @@ func Run(cfg *config.Config) {
 	}
 
 	usecase := usecase.New(redis, pgRepo, publisher)
-	server := controller.New(cfg.Server, usecase)
+	server := controller.New(&cfg.Server, usecase)
 
 	// tgbot sender
-	tgbotSender, err := tgbot.New(cfg.Telegram.BotToken)
+	tgbotSender, err := tgbot.New(&cfg.Telegram)
 	if err != nil {
 		zlog.Logger.Fatal().
 			Err(err).
@@ -83,9 +83,9 @@ func Run(cfg *config.Config) {
 	}
 
 	// email sender
-	emailSender := email.New(cfg.Email)
+	emailSender := email.New(&cfg.Email)
 
-	notifier, err := notifier.New(cfg.RabbitMQ, usecase)
+	notifier, err := notifier.New(&cfg.RabbitMQ, usecase)
 	if err != nil {
 		zlog.Logger.Fatal().
 			Err(err).
@@ -105,11 +105,12 @@ func Run(cfg *config.Config) {
 	go func() {
 		if err := server.Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			zlog.Logger.
-				Error().
+				Fatal().
 				Err(err).
 				Str("path", "Run server.Srv.ListenAndServe").
 				Msg("cannot start server")
 		}
+		zlog.Logger.Info().Msgf("server is started http://%s:%d/", cfg.Server.Host, cfg.Server.Port)
 	}()
 
 	// Ожидание сигнала для graceful shutdown

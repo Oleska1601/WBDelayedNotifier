@@ -31,11 +31,13 @@ const docTemplate = `{
                 "summary": "create notification",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "notification ID",
-                        "name": "notification_id",
-                        "in": "query",
-                        "required": true
+                        "description": "notification request",
+                        "name": "notification",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateNotificationRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -84,7 +86,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "notification ID",
                         "name": "notification_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -132,7 +134,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "notification ID",
                         "name": "notification_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -166,6 +168,42 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.CreateNotificationRequest": {
+            "type": "object",
+            "required": [
+                "channel",
+                "message",
+                "recipient",
+                "scheduled_at"
+            ],
+            "properties": {
+                "channel": {
+                    "enum": [
+                        "email",
+                        "telegram"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Channel"
+                        }
+                    ],
+                    "example": "telegram"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "test_message"
+                },
+                "recipient": {
+                    "description": "адрес тг или email",
+                    "type": "string",
+                    "example": "796744183"
+                },
+                "scheduled_at": {
+                    "type": "string",
+                    "example": "2025-11-01T10:40:00Z"
+                }
+            }
+        },
         "dto.CreateNotificationResponse": {
             "type": "object",
             "properties": {
@@ -181,6 +219,17 @@ const docTemplate = `{
                     "$ref": "#/definitions/models.Status"
                 }
             }
+        },
+        "models.Channel": {
+            "type": "string",
+            "enum": [
+                "telegram",
+                "email"
+            ],
+            "x-enum-varnames": [
+                "ChannelTelegram",
+                "ChannelEmail"
+            ]
         },
         "models.Status": {
             "type": "string",

@@ -9,14 +9,14 @@
 <body>
     <div id="app">
         <!-- Заголовок -->
-        <header class="header">
-            <h1>📨 Сервис отложенных уведомлений</h1>
-            <div class="stats">
-                <span>Всего: <span id="total-count">0</span></span>
-                <span>Ожидают: <span id="pending-count">0</span></span>
-                <span>Отправлено: <span id="sent-count">0</span></span>
-            </div>
-        </header>
+        <h1>📨 Сервис отложенных уведомлений</h1>
+        <div class="header">
+            <span>Всего: <span id="total-count">0</span></span>
+            <span>Ожидают: <span id="scheduled-count">0</span></span>
+            <span>Отправлено: <span id="sent-count">0</span></span>
+            <span>Ошибки: <span id="failed-count">0</span></span>
+            <span>Отменено: <span id="cancelled-count">0</span></span>
+        </div>
         
         <!-- Основной контент -->
         <main class="container">
@@ -26,7 +26,7 @@
                 <form id="create-notification-form" class="notification-form">
                     <div class="form-group">
                         <label for="message">Сообщение:</label>
-                        <textarea id="message" required placeholder="Введите текст уведомления..."></textarea>
+                        <textarea id="message" placeholder="Введите текст уведомления..."></textarea>
                     </div>
 
                     <div class="form-group">
@@ -41,17 +41,14 @@
                     <div id="recipient-fields">
                         <!-- Поле для email по умолчанию -->
                         <div class="form-group">
-                            <label for="recipient">Email получателя:</label>
-                            <input type="email" id="recipient" required 
-                                   placeholder="user@example.com"
-                                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
-                            <small class="help-text">Введите корректный email адрес</small>
+                            <label for="recipient">Получатель:</label>
+                            <input type="text" id="recipient" placeholder="Введите email или Telegram код (для этого отправьте /start в бота)">
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label for="scheduled-time">Время отправки:</label>
-                        <input type="datetime-local" id="scheduled-time" required>
+                        <input type="datetime-local" id="scheduled-time">
                     </div>
                     
                     <button type="submit" class="btn-primary">Создать уведомление</button>
@@ -63,9 +60,10 @@
                 <h2>Список уведомлений</h2>
                 <div class="filters">
                     <button class="filter-btn active" data-filter="all">Все</button>
-                    <button class="filter-btn" data-filter="pending">⏳ Ожидают</button>
+                    <button class="filter-btn" data-filter="scheduled">⏳ Ожидают</button>
                     <button class="filter-btn" data-filter="sent">✅ Отправлены</button>
                     <button class="filter-btn" data-filter="failed">❌ Ошибки</button>
+                    <button class="filter-btn" data-filter="cancelled">🚫 Отменено</button>
                 </div>
                 
                 <div class="notifications-table-container">

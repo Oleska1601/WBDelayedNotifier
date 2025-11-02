@@ -28,18 +28,25 @@ class UI {
     }
 
     // Обновить статистику
+    // Обновить статистику
     static updateStats(notifications) {
         const totalCount = document.getElementById('total-count');
-        const pendingCount = document.getElementById('pending-count');
+        const scheduledCount = document.getElementById('scheduled-count');
         const sentCount = document.getElementById('sent-count');
+        const failedCount = document.getElementById('failed-count');
+        const cancelledCount = document.getElementById('cancelled-count');
 
         const total = notifications.length;
-        const pending = notifications.filter(n => n.status === 'pending').length;
+        const scheduled = notifications.filter(n => n.status === 'scheduled').length;
         const sent = notifications.filter(n => n.status === 'sent').length;
+        const failed = notifications.filter(n => n.status === 'failed').length;
+        const cancelled = notifications.filter(n => n.status === 'cancelled').length;
 
         totalCount.textContent = total;
-        pendingCount.textContent = pending;
+        scheduledCount.textContent = scheduled;
         sentCount.textContent = sent;
+        failedCount.textContent = failed;
+        cancelledCount.textContent = cancelled;
     }
 
     // Установить обработчики событий
@@ -69,42 +76,25 @@ class UI {
         });
     }
 
-        // Обновление полей получателя при смене канала
+    // Обновление полей получателя при смене канала
     static updateRecipientFields(channel) {
         const container = document.getElementById('recipient-fields');
         
         const fields = {
             email: `
                 <div class="form-group">
-                    <label for="recipient">Email получателя:</label>
-                    <input type="email" id="recipient" required 
-                           placeholder="user@example.com"
-                           pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
-                    <small class="help-text">Введите корректный email адрес</small>
+                    <label for="recipient">Получатель:</label>
+                    <input type="text" id="recipient" placeholder="Введите email">
                 </div>
             `,
             telegram: `
                 <div class="form-group">
-                    <label for="recipient">Telegram ID:</label>
-                    <input type="text" id="recipient" required 
-                           placeholder="@username или 123456789"
-                           pattern="(@[a-zA-Z0-9_]+|[0-9]+)">
-                    <small class="help-text">Введите @username или числовой ID</small>
+                    <label for="recipient">Получатель:</label>
+                    <input type="text" id="recipient" placeholder="Введите Telegram ID">
                 </div>
             `
         };
 
         container.innerHTML = fields[channel] || fields.email;
     }
-
-    // Валидация получателя в зависимости от канала
-    static validateRecipient(channel, recipient) {
-        const validators = {
-            email: (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-            telegram: (id) => /^(@[a-zA-Z0-9_]+|[0-9]+)$/.test(id)
-        };
-
-        return validators[channel] ? validators[channel](recipient) : false;
-    }
-
 }
