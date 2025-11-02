@@ -46,7 +46,7 @@ CREATE TYPE channel AS ENUM
 ```
 
 3. Таблица с уведомлениями
-```
+```sql
 
 CREATE TABLE IF NOT EXISTS notifications (
     id SERIAL PRIMARY KEY,
