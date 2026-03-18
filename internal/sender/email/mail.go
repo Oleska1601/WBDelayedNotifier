@@ -17,14 +17,8 @@ func New(cfg *config.EmailConfig) *EmailSender {
 	}
 }
 
-func (es *EmailSender) Send(recipient, body string) error {
-	// Формируем сообщение
-	message := fmt.Sprintf("Hello from notification service!\n, Your notification:%s\n", body)
-
-	// Аутентификация
+func (es *EmailSender) SendMessage(recipient, message string) error {
 	auth := smtp.PlainAuth("", es.cfg.Username, es.cfg.Password, es.cfg.Host)
-
-	// Отправка
 	addr := fmt.Sprintf("%s:%d", es.cfg.Host, es.cfg.Port)
 	err := smtp.SendMail(addr, auth, es.cfg.From, []string{recipient}, []byte(message))
 	if err != nil {

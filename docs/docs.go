@@ -16,9 +16,9 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/notify": {
+        "/api/v1/notify": {
             "post": {
-                "description": "create notification with provided params",
+                "description": "Создание нового уведомления",
                 "consumes": [
                     "application/json"
                 ],
@@ -26,29 +26,29 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "notify"
+                    "NOTIFICATIONS API"
                 ],
-                "summary": "create notification",
+                "summary": "Создание уведомления",
                 "parameters": [
                     {
-                        "description": "notification request",
-                        "name": "notification",
+                        "description": "Данные для создания уведомления",
+                        "name": "req",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateNotificationRequest"
+                            "$ref": "#/definitions/request.CreateNotificationRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateNotificationResponse"
+                            "$ref": "#/definitions/response.CreateNotificationResponse"
                         }
                     },
                     "400": {
-                        "description": "impossible to create notification",
+                        "description": "Ошибка валидации",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -57,7 +57,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "failed to create notification",
+                        "description": "Ошибка сервера",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -68,24 +68,21 @@ const docTemplate = `{
                 }
             }
         },
-        "/notify/{notification_id}": {
+        "/api/v1/notify/{id}": {
             "get": {
-                "description": "get notification status by notification_id",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Получение статуса конкретного уведомления",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "notify"
+                    "NOTIFICATIONS API"
                 ],
-                "summary": "get notification status",
+                "summary": "Получение статуса уведомления",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "notification ID",
-                        "name": "notification_id",
+                        "type": "integer",
+                        "description": "ID уведомления",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
@@ -94,11 +91,20 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetNotificationResponse"
+                            "$ref": "#/definitions/response.GetNotificationStatusResponse"
                         }
                     },
                     "400": {
-                        "description": "invalid notification_id",
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Уведомление не найдено",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -107,7 +113,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "failed to get notification status",
+                        "description": "Ошибка сервера",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -118,35 +124,45 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "delete notification by notification_id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
+                "security": [],
+                "description": "Удаление (отмена) существующего уведомления",
                 "tags": [
-                    "notify"
+                    "NOTIFICATIONS API"
                 ],
-                "summary": "delete notification",
+                "summary": "Удаление (отмена) уведомления",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "notification ID",
-                        "name": "notification_id",
+                        "type": "integer",
+                        "description": "ID уведомления",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "delete notification successful",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "OK"
                     },
                     "400": {
-                        "description": "invalid notification_id",
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Уведомление не существует",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Ошибка бизнес логики",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -155,7 +171,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "failed to delete notification",
+                        "description": "Ошибка сервера",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -168,58 +184,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.CreateNotificationRequest": {
-            "type": "object",
-            "required": [
-                "channel",
-                "message",
-                "recipient",
-                "scheduled_at"
-            ],
-            "properties": {
-                "channel": {
-                    "enum": [
-                        "email",
-                        "telegram"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.Channel"
-                        }
-                    ],
-                    "example": "telegram"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "test_message"
-                },
-                "recipient": {
-                    "description": "адрес тг или email",
-                    "type": "string",
-                    "example": "796744183"
-                },
-                "scheduled_at": {
-                    "type": "string",
-                    "example": "2025-11-01T10:40:00Z"
-                }
-            }
-        },
-        "dto.CreateNotificationResponse": {
-            "type": "object",
-            "properties": {
-                "notification_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "dto.GetNotificationResponse": {
-            "type": "object",
-            "properties": {
-                "notification_status": {
-                    "$ref": "#/definitions/models.Status"
-                }
-            }
-        },
         "models.Channel": {
             "type": "string",
             "enum": [
@@ -245,6 +209,46 @@ const docTemplate = `{
                 "StatusCancelled",
                 "StatusFailed"
             ]
+        },
+        "request.CreateNotificationRequest": {
+            "type": "object",
+            "required": [
+                "channel",
+                "message",
+                "recipient",
+                "scheduled_at"
+            ],
+            "properties": {
+                "channel": {
+                    "$ref": "#/definitions/models.Channel"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "recipient": {
+                    "description": "тг или email",
+                    "type": "string"
+                },
+                "scheduled_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.CreateNotificationResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.GetNotificationStatusResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "$ref": "#/definitions/models.Status"
+                }
+            }
         }
     }
 }`
@@ -259,6 +263,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "API for Delayed Notifier",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

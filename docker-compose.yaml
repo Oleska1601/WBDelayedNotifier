@@ -1,15 +1,39 @@
-version: "3.9"
-
 services:
+
+  postgres:
+    container_name: postgres
+    image: postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: ${DB_POSTGRES_HOST}
+      POSTGRES_USER: ${DB_POSTGRES_USERNAME}    
+      POSTGRES_PASSWORD: ${DB_POSTGRES_PASSWORD} 
+      POSTGRES_DB: ${DB_POSTGRES_DATABASE}      
+    volumes:
+      - postgres-data:/var/lib/postgresql # создание хранилища (без него все данные исчезнут после перезапуска контейнера)
+    ports:
+      - "5432:5432"
+    restart: always
+    networks:
+      - notifier_network
+  
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data  
+    networks:
+      - notifier_network
 
   rabbitmq:
     image: rabbitmq
     container_name: rabbitmq
-    env_file:
-      .env
     build: 
       context: .
-      dockerfile: dockerfile.rabbitmq
+      dockerfile: Dockerfile.rabbitmq
     ports:
       - "5672:5672"   
       - "15672:15672"
@@ -20,30 +44,6 @@ services:
     networks:
       - notifier_network
 
-  postgres:
-    container_name: postgres
-    image: postgres
-    env_file:
-      .env
-    volumes:
-      - postgres-data:/var/lib/postgresql # создание хранилища (без него все данные исчезнут после перезапуска контейнера)
-    ports:
-      - "5432:5432"
-    networks:
-      - notifier_network
-  
-  redis:
-    image: "redis:latest"
-    ports:
-      - "6379:6379"
-    env_file:
-      .env
-    restart: unless-stopped
-    volumes:
-      - redis-data:/data  
-    networks:
-      - notifier_network
-
   notifier:
     container_name: notifier
     image: notifier
@@ -51,16 +51,16 @@ services:
       .env
     build: 
       context: .
-      dockerfile: dockerfile
+      dockerfile: Dockerfile
     ports:
       - "8081:8081"
     depends_on:
-      - postgres
-      - rabbitmq  
-      - redis     
+      - postgres 
+      - redis
+      - rabbitmq
+    restart: unless-stopped     
     networks:
       - notifier_network
-    restart: unless-stopped
 
 volumes:
   postgres-data:

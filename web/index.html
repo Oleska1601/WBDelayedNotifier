@@ -3,104 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сервис отложенных уведомлений</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Тестирование уведомлений</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="app">
-        <!-- Заголовок -->
-        <h1>📨 Сервис отложенных уведомлений</h1>
-        <div class="header">
-            <span>Всего: <span id="total-count">0</span></span>
-            <span>Ожидают: <span id="scheduled-count">0</span></span>
-            <span>Отправлено: <span id="sent-count">0</span></span>
-            <span>Ошибки: <span id="failed-count">0</span></span>
-            <span>Отменено: <span id="cancelled-count">0</span></span>
-        </div>
-        
-        <!-- Основной контент -->
-        <main class="container">
-            <!-- Форма создания уведомления -->
-            <section class="form-section">
-                <h2>Создать новое уведомление</h2>
-                <form id="create-notification-form" class="notification-form">
-                    <div class="form-group">
-                        <label for="message">Сообщение:</label>
-                        <textarea id="message" placeholder="Введите текст уведомления..."></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="channel">Канал отправки:</label>
-                        <select id="channel">
-                            <option value="email">📧 Email</option>
-                            <option value="telegram">📱 Telegram</option>
-                        </select>
-                    </div>
-
-                    <!-- Динамические поля для получателя -->
-                    <div id="recipient-fields">
-                        <!-- Поле для email по умолчанию -->
-                        <div class="form-group">
-                            <label for="recipient">Получатель:</label>
-                            <input type="text" id="recipient" placeholder="Введите email или Telegram код (для этого отправьте /start в бота)">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="scheduled-time">Время отправки:</label>
-                        <input type="datetime-local" id="scheduled-time">
-                    </div>
-                    
-                    <button type="submit" class="btn-primary">Создать уведомление</button>
-                </form>
-            </section>
-
-            <!-- Список уведомлений -->
-            <section class="list-section">
-                <h2>Список уведомлений</h2>
-                <div class="filters">
-                    <button class="filter-btn active" data-filter="all">Все</button>
-                    <button class="filter-btn" data-filter="scheduled">⏳ Ожидают</button>
-                    <button class="filter-btn" data-filter="sent">✅ Отправлены</button>
-                    <button class="filter-btn" data-filter="failed">❌ Ошибки</button>
-                    <button class="filter-btn" data-filter="cancelled">🚫 Отменено</button>
-                </div>
-                
-                <div class="notifications-table-container">
-                    <table id="notifications-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Сообщение</th>
-                                <th>Получатель</th>
-                                <th>Время отправки</th>
-                                <th>Канал</th>
-                                <th>Статус</th>
-                                <th>Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody id="notifications-tbody">
-                            <!-- Динамически заполняется -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
+    <h1>Тестирование API уведомлений</h1>
+    
+    <!-- Создание уведомления -->
+    <div class="section">
+        <h2>Создать уведомление</h2>
+        <form id="createForm">
+            <label>Канал:</label>
+            <select id="channel" required>
+                <option value="email">Email</option>
+                <option value="telegram">Telegram</option>
+            </select>
+            
+            <label>Получатель:</label>
+            <input type="text" id="recipient" placeholder="email или ID Telegram" required>
+            
+            <label>Сообщение:</label>
+            <textarea id="message" rows="3" placeholder="Текст сообщения" required></textarea>
+            
+            <label>Дата и время отправки:</label>
+            <input type="datetime-local" id="scheduledAt" required>
+            
+            <button type="submit">Создать уведомление</button>
+        </form>
+        <div id="createResult" class="result"></div>
+    </div>
+    
+    <!-- Получение статуса уведомления -->
+    <div class="section">
+        <h2>Получить статус уведомления</h2>
+        <form id="getForm">
+            <label>ID уведомления:</label>
+            <input type="number" id="notificationId" placeholder="Введите ID уведомления" required>
+            <button type="submit">Получить статус</button>
+        </form>
+        <div id="getResult" class="result"></div>
+    </div>
+    
+    <!-- Удаление уведомления -->
+    <div class="section">
+        <h2>Удалить уведомление</h2>
+        <form id="deleteForm">
+            <label>ID уведомления:</label>
+            <input type="number" id="deleteNotificationId" placeholder="Введите ID уведомления" required>
+            <button type="submit">Удалить уведомление</button>
+        </form>
+        <div id="deleteResult" class="result"></div>
     </div>
 
-    <!-- Модальное окно -->
-    <div id="modal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3 id="modal-title">Информация</h3>
-            <p id="modal-message"></p>
-        </div>
-    </div>
-
-    <!-- Загрузка скриптов -->
-    <script src="js/api.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/notifications.js"></script>
-    <script src="js/app.js"></script>
+       <script src="app.js"></script>
 </body>
 </html>

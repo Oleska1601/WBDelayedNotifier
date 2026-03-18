@@ -29,5 +29,5 @@ func (r *Redis) GetValue(ctx context.Context, key string) (string, error) {
 }
 
 func (r *Redis) SetValue(ctx context.Context, key string, value interface{}) error {
-	return r.client.SetEX(ctx, key, value, r.ttl).Err()
+	return r.client.SetWithExpiration(ctx, key, value, r.ttl)
 }

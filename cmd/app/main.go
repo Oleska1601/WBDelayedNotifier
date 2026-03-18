@@ -13,6 +13,6 @@ func main() {
 		slog.Error("main config.New", slog.Any("error", err))
 		return
 	}
-	app.Run(cfg)
 
+	app.Run(cfg)
 }

@@ -1,9 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/wb-go/wbf/config"
+	wbfcfg "github.com/wb-go/wbf/config"
 )
 
 type AppConfig struct {
@@ -17,20 +18,19 @@ type ServerConfig struct {
 	ShutdownTimeout time.Duration `mapstructure:"shutdown_timeout"`
 }
 
+type DatabaseConfig struct {
+	Postgres PostgresConfig `mapstructure:"postgres"`
+}
+
 type PostgresConfig struct {
 	Host            string        `mapstructure:"host"`
 	Port            int           `mapstructure:"port"`
 	Username        string        `mapstructure:"username"`
 	Password        string        `mapstructure:"password"`
 	Database        string        `mapstructure:"database"`
-	SSLMode         string        `mapstructure:"ssl_mode"`
 	MaxOpenConns    int           `mapstructure:"max_open_conns"`
 	MaxIdleConns    int           `mapstructure:"max_idle_conns"`
 	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"`
-}
-
-type LoggerConfig struct {
-	Level string `mapstructure:"level"`
 }
 
 type RedisConfig struct {
@@ -41,41 +41,25 @@ type RedisConfig struct {
 	TTL      time.Duration `mapstructure:"ttl"`
 }
 
-type RabbitMQConnConfig struct {
+type ClientConnConfig struct {
 	URL     string        `mapstructure:"url"`
-	Retries int           `mapstructure:"retries"`
-	Pause   time.Duration `mapstructure:"pause"`
-}
-
-type RabbitMQExchangeConfig struct {
-	Name       string `mapstructure:"name"`
-	Type       string `mapstructure:"type"`
-	Durable    bool   `mapstructure:"durable"`
-	AutoDelete bool   `mapstructure:"auto_delete"`
-	Internal   bool   `mapstructure:"internal"`
-	NoWait     bool   `mapstructure:"no_wait"`
-}
-
-type RabbitMQQueueConfig struct {
-	Name       string `mapstructure:"name"`
-	RoutingKey string `mapstructure:"routing_key"`
-	Durable    bool   `mapstructure:"durable"`
-	AutoDelete bool   `mapstructure:"auto_delete"`
-	Exclusive  bool   `mapstructure:"exclusive"`
-	NoWait     bool   `mapstructure:"no_wait"`
+	Timeout time.Duration `mapstructure:"timeout"`
 }
 
 type RabbitMQConfig struct {
-	Conn            RabbitMQConnConfig     `mapstructure:"conn"`
-	Exchange        RabbitMQExchangeConfig `mapstructure:"exchange"`
-	RetryExchange   RabbitMQExchangeConfig `mapstructure:"retry_exchange"`
-	QueueEmail      RabbitMQQueueConfig    `mapstructure:"queue_email"`
-	QueueTg         RabbitMQQueueConfig    `mapstructure:"queue_tg"`
-	RetryQueueEmail RabbitMQQueueConfig    `mapstructure:"retry_queue_email"`
-	RetryQueueTg    RabbitMQQueueConfig    `mapstructure:"retry_queue_tg"`
-	Attempts        int                    `mapstructure:"attempts"`
-	Delay           time.Duration          `mapstructure:"delay"`
-	Backoff         float64                `mapstructure:"backoff"`
+	ClientConn ClientConnConfig `mapstructure:"client_conn"`
+}
+
+type LoggerConfig struct {
+	Level string `mapstructure:"level"`
+}
+
+type GinConfig struct {
+	Mode string `mapstructure:"mode"`
+}
+
+type TgBotConfig struct {
+	Token string `mapstructure:"token"`
 }
 
 type EmailConfig struct {
@@ -84,33 +68,34 @@ type EmailConfig struct {
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 	From     string `mapstructure:"from"`
-	SSL      bool   `mapstructure:"ssl"`
-}
-
-type TelegramConfig struct {
-	BotToken string `mapstructure:"bot_token"`
-	Timeout  int    `mapstructure:"timeout"`
 }
 
 type Config struct {
 	App      AppConfig      `mapstructure:"app"`
 	Server   ServerConfig   `mapstructure:"server"`
-	DB       PostgresConfig `mapstructure:"postgres"`
-	Logger   LoggerConfig   `mapstructure:"logger"`
+	Database DatabaseConfig `mapstructure:"db"`
 	Redis    RedisConfig    `mapstructure:"redis"`
 	RabbitMQ RabbitMQConfig `mapstructure:"rabbitmq"`
+	Logger   LoggerConfig   `mapstructure:"logger"`
+	Gin      GinConfig      `mapstructure:"gin"`
+	TgBot    TgBotConfig    `mapstructure:"tg_bot"`
 	Email    EmailConfig    `mapstructure:"email"`
-	Telegram TelegramConfig `mapstructure:"telegram"`
 }
 
 func New() (*Config, error) {
-	cfg := config.New()
-	cfg.LoadConfigFiles("./config/config.yaml")
+	config := wbfcfg.New()
 
-	// Включить env переменные с приставкой
-	cfg.EnableEnv("")
+	cfgFile := "./config/config.yaml"
+	if err := config.LoadConfigFiles(cfgFile); err != nil {
+		return nil, fmt.Errorf("load config files: %w", err)
+	}
 
-	var config Config
-	err := cfg.Unmarshal(&config)
-	return &config, err
+	config.EnableEnv("")
+
+	var cfg Config
+	if err := config.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("config unmarshal: %w", err)
+	}
+
+	return &cfg, nil
 }

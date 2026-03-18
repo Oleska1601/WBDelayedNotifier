@@ -18,7 +18,6 @@ func IsValidStatus(currentStatus Status) bool {
 		currentStatus == StatusFailed
 }
 
-// канал отправки
 type Channel string
 
 const (
@@ -27,7 +26,7 @@ const (
 )
 
 type Notification struct {
-	ID          int64
+	ID          int
 	Channel     Channel
 	Recipient   string
 	Message     string
@@ -35,10 +34,4 @@ type Notification struct {
 	ScheduledAt time.Time
 	SentAt      time.Time
 	Status      Status
-}
-
-type UpdateNotification struct {
-	ID     int64
-	SentAt *time.Time
-	Status Status
 }

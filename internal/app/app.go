@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -9,15 +11,15 @@ import (
 	"syscall"
 
 	"github.com/Oleska1601/WBDelayedNotifier/config"
-	"github.com/Oleska1601/WBDelayedNotifier/internal/controller"
-	"github.com/Oleska1601/WBDelayedNotifier/internal/database/repo"
-	"github.com/Oleska1601/WBDelayedNotifier/internal/models"
-	"github.com/Oleska1601/WBDelayedNotifier/internal/notifier"
-	"github.com/Oleska1601/WBDelayedNotifier/internal/publisher"
+	"github.com/Oleska1601/WBDelayedNotifier/internal/controller/api"
+	v1 "github.com/Oleska1601/WBDelayedNotifier/internal/controller/api/v1"
+	"github.com/Oleska1601/WBDelayedNotifier/internal/queue/rabbitmq/consumer"
+	"github.com/Oleska1601/WBDelayedNotifier/internal/queue/rabbitmq/publisher"
 	"github.com/Oleska1601/WBDelayedNotifier/internal/redis"
+	"github.com/Oleska1601/WBDelayedNotifier/internal/repo/postgres"
 	"github.com/Oleska1601/WBDelayedNotifier/internal/sender/email"
 	"github.com/Oleska1601/WBDelayedNotifier/internal/sender/tgbot"
-	"github.com/Oleska1601/WBDelayedNotifier/internal/usecase"
+	"github.com/Oleska1601/WBDelayedNotifier/internal/service"
 	"github.com/wb-go/wbf/zlog"
 )
 
@@ -29,15 +31,15 @@ import (
 // @host localhost:8081
 // @BasePath /
 func Run(cfg *config.Config) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	// logger
 	zlog.Init()
 	if err := zlog.SetLevel(cfg.Logger.Level); err != nil {
 		log.Fatalln("set zlog level error: %w", err)
 	}
 
-	// postgres
-	db, err := initDB(&cfg.DB)
+	db, err := initDB(&cfg.Database.Postgres)
 	if err != nil {
 		zlog.Logger.Fatal().
 			Err(err).
@@ -45,8 +47,7 @@ func Run(cfg *config.Config) {
 			Msg("init database")
 	}
 
-	// postgres repo
-	pgRepo := repo.New(db)
+	pgRepo := postgres.New(db)
 	if err := pgRepo.ApplyMigrations(); err != nil {
 		zlog.Logger.Fatal().
 			Err(err).
@@ -61,7 +62,6 @@ func Run(cfg *config.Config) {
 			Msg("init redis")
 	}
 
-	// publisher
 	publisher, err := publisher.New(&cfg.RabbitMQ)
 	if err != nil {
 		zlog.Logger.Fatal().
@@ -69,64 +69,50 @@ func Run(cfg *config.Config) {
 			Str("path", "Run publisher.New").
 			Msg("init publisher")
 	}
-
-	usecase := usecase.New(redis, pgRepo, publisher)
-	server := controller.New(&cfg.Server, usecase)
-
-	// tgbot sender
-	tgbotSender, err := tgbot.New(&cfg.Telegram)
-	if err != nil {
-		zlog.Logger.Fatal().
-			Err(err).
-			Str("path", "Run tgbot.New").
-			Msg("init tgbot")
-	}
-
-	// email sender
 	emailSender := email.New(&cfg.Email)
-
-	notifier, err := notifier.New(&cfg.RabbitMQ, usecase)
+	tgAPI, err := initTgAPI(&cfg.TgBot)
 	if err != nil {
 		zlog.Logger.Fatal().
 			Err(err).
-			Str("path", "Run notifier.New").
-			Msg("init notifier")
+			Str("path", "Run initTgAPI").
+			Msg("failed to init tg api")
 	}
-	notifier.RegisterSender(models.ChannelEmail, emailSender)
-	notifier.RegisterSender(models.ChannelTelegram, tgbotSender)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	tgBotSender := tgbot.New(tgAPI)
+	consumer, err := consumer.New(&cfg.RabbitMQ, pgRepo, emailSender, tgBotSender)
+	service := service.New(redis, pgRepo, publisher)
+	apiV1 := v1.New(service)
+	router := api.Register(&cfg.Gin, apiV1)
+	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	server := &http.Server{Addr: addr, Handler: router}
 
-	go tgbotSender.HandleUpdates(ctx)
-
-	notifier.StartWorkers(ctx)
+	tgBotSender.Start(ctx)
+	consumer.Start(ctx)
 
 	go func() {
-		if err := server.Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			zlog.Logger.
-				Fatal().
+		zlog.Logger.Info().Str("path", "Run").Str("addr", addr).Msg("start server")
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			zlog.Logger.Fatal().
 				Err(err).
-				Str("path", "Run server.Srv.ListenAndServe").
-				Msg("cannot start server")
+				Str("path", "Run server.ListenAndServe").
+				Msg("failed to process server")
 		}
-		zlog.Logger.Info().Msgf("server is started http://%s:%d/", cfg.Server.Host, cfg.Server.Port)
 	}()
 
-	// Ожидание сигнала для graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	zlog.Logger.Info().Msg("shutting down server...")
-	cancel()
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(ctx, cfg.Server.ShutdownTimeout)
 	defer shutdownCancel()
-	if err := server.Srv.Shutdown(shutdownCtx); err != nil {
-		zlog.Logger.Error().Err(err).Msg("server.Srv.Shutdown")
-		return
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		zlog.Logger.Err(err).Str("path", "App server.Shutdown").
+			Msg("failed to shutdown server")
 	}
 
-	zlog.Logger.Info().Msg("server exited properly")
+	tgBotSender.Stop()
+	consumer.Stop()
 
+	zlog.Logger.Info().Msg("shutdown server properly")
 }
